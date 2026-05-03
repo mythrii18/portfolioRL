@@ -45,6 +45,7 @@ Sharpe Ratio above 1.0 is the gold standard in finance.
 
 ## 🏗️ System Architecture
 
+
 WEB BROWSER
 Upload CSV → Configure → Train → Results
 ↓
@@ -64,7 +65,12 @@ Return JSON Results
 RESULTS DASHBOARD
 Metric Cards | Equity Curve | Donut Chart
 
+
+---
+
 ## 🤖 PPO Agent Architecture
+
+
 Input: 20 features (5 stocks × 4 weeks)
 ↓
 Hidden Layer 1 (32 neurons, ReLU)
@@ -77,11 +83,17 @@ Softmax
 ↓
 Output: 5 portfolio weights (sum = 100%)
 
+
 ---
 
 ## 🔄 Reinforcement Learning Loop
 
-STATE (20 features) → PPO AGENT → ACTION (5 weights)
+
+STATE (20 features)
+↓
+PPO AGENT
+↓
+ACTION (5 weights)
 ↓
 REWARD = return − 0.15 × volatility
 ↓
@@ -90,16 +102,18 @@ Repeat for training timesteps
 Agent improves over time
 
 
-## 🔢 Key Formulas
-Reward       =  Portfolio Return - 0.15 x Volatility
-Softmax      =  e^(x_i) / sum of e^(x_j)
-Portfolio R  =  sum of (weight_i x stock_return_i)
-Sharpe Ratio =  (Mean Return / Std Dev) x sqrt(52)
-Max Drawdown =  (Value - Peak) / Peak x 100
-Calmar Ratio =  Annualised Return / Max Drawdown
-Daily Return =  (P_t - P_prev) / P_prev
-
 ---
+
+## 🔢 Key Formulas
+
+
+Reward = Portfolio Return − 0.15 × Volatility
+Softmax = e^(x_i) / Σ e^(x_j)
+Portfolio R = Σ(weight_i × stock_return_i)
+Sharpe Ratio = (Mean Return / Std Dev) × √52
+Max Drawdown = (Value − Peak) / Peak × 100
+Calmar Ratio = Annualised Return / Max Drawdown
+Daily Return = (P_t − P_prev) / P_prev
 
 ## 🛠️ Tech Stack
 
