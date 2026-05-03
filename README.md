@@ -170,11 +170,17 @@ Daily Return = (P_t − P_prev) / P_prev
 
 ## 📁 Project Structure
 portfolioRL/
+
 ├── app1.py            ← Flask backend + PPO training
+
 ├── requirements.txt   ← Python dependencies
+
 ├── README.md          ← This file
+
 ├── .gitignore         ← Ignored files
+
 └── frontend/
+
 └── index.html     ← Dashboard UI
 
 ---
@@ -259,19 +265,6 @@ Note: CSV not included in repo due to large size. Download from Kaggle.
 - Cloud deployment on AWS or Heroku
 - Compare PPO vs A2C SAC DDPG
 - Add transaction cost modelling
-
----
-
-## 👥 Team
-
-| Name | Role |
-|------|------|
-| Your Name | Backend PPO Model Environment |
-| Partner Name | Frontend Data Processing Evaluation |
-
-College: Your College Name
-Department: Your Department
-Subject: Deep Learning Practices DLP
 
 ---
 
