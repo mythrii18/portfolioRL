@@ -141,11 +141,17 @@ Agent improves over time
 
 
 Reward = Portfolio Return − 0.15 × Volatility
+
 Softmax = e^(x_i) / Σ e^(x_j)
+
 Portfolio R = Σ(weight_i × stock_return_i)
+
 Sharpe Ratio = (Mean Return / Std Dev) × √52
+
 Max Drawdown = (Value − Peak) / Peak × 100
+
 Calmar Ratio = Annualised Return / Max Drawdown
+
 Daily Return = (P_t − P_prev) / P_prev
 
 ## 🛠️ Tech Stack
