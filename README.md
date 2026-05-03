@@ -2,6 +2,7 @@
 ### Portfolio Optimization using Deep Reinforcement Learning (PPO)
 
 > "Markets Are Chaos. Your Portfolio Doesn't Have To Be."
+![Uploading image.png…]()
 
 ---
 
