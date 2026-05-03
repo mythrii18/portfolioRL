@@ -59,8 +59,8 @@ Load CSV → Clean → Pivot → Weekly Resample
 
 Gymnasium Environment
 
-
 ↓
+
 PPO Agent Training
 
 ↓
@@ -93,6 +93,7 @@ Hidden Layer 1 (32 neurons, ReLU)
 Hidden Layer 2 (32 neurons, ReLU)
 
 ↓
+
 Actor-Critic Output
 
 ↓
