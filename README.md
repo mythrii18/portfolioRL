@@ -50,6 +50,8 @@ Sharpe Ratio above 1.0 is the gold standard in finance.
 └──────────────────┬──────────────────────────┘
 │ HTTP POST /train
 ▼
+
+
 ┌─────────────────────────────────────────────┐
 │           FLASK BACKEND (app1.py)           │
 │                                             │
@@ -65,6 +67,9 @@ Sharpe Ratio above 1.0 is the gold standard in finance.
 └──────────────────┬──────────────────────────┘
 │
 ▼
+
+
+
 ┌─────────────────────────────────────────────┐
 │            RESULTS DASHBOARD                │
 │  Metric Cards | Equity Curve | Donut Chart  │
