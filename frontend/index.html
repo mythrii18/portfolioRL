@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PortfolioRL — AI Portfolio Optimization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-void:  #07060f;
+  --bg-deep:  #0d0b18;
+  --bg-card:  #130f1f;
+  --bg-card2: #181328;
+  --border:         rgba(255,255,255,0.07);
+  --border-bright:  rgba(167,139,250,0.35);
+  --purple: #8b5cf6;
+  --pink:   #e879f9;
+  --green:  #34d399;
+  --amber:  #fbbf24;
+  --red:    #f87171;
+  --blue:   #60a5fa;
+  --teal:   #2dd4bf;
+  --text-1: #f5f0ff;
+  --text-2: #9285aa;
+  --text-3: #4a4060;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Card vertical gap — single source of truth */
+  --card-gap: 20px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg-void);
+  color: var(--text-1);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+.grid-bg {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(139,92,246,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,92,246,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 10;
+  padding: 0 40px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,6,15,0.88);
+  backdrop-filter: blur(20px);
+}
+.logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--purple), var(--pink)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.logo span { color: var(--purple); }
+.header-badges { display: flex; gap: 8px; }
+.badge { font-family: var(--font-mono); font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); color: var(--text-2); background: var(--bg-card); }
+
+/* ── HERO ── */
+.hero { position: relative; z-index: 1; padding: 72px 40px 52px; text-align: center; }
+.hero-glow { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 700px; height: 400px; background: radial-gradient(ellipse, rgba(139,92,246,0.1) 0%, transparent 70%); pointer-events: none; }
+.hero h1 { font-family: var(--font-head); font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; max-width: 780px; margin: 0 auto 16px; }
+.hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 50%, var(--green) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero p { color: var(--text-2); font-size: 1rem; max-width: 520px; margin: 0 auto; line-height: 1.7; }
+
+/* ── LAYOUT ── */
+.main {
+  position: relative; z-index: 1;
+  max-width: 1360px; margin: 0 auto;
+  padding: 0 40px 80px;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* ── PANEL ── */
+.panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.panel-header { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.panel-header h2 { font-family: var(--font-head); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); }
+.panel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 8px var(--purple); }
+.panel-body { padding: 22px; }
+
+/* ── UPLOAD ── */
+.upload-zone { border: 2px dashed var(--border-bright); border-radius: 12px; padding: 28px 16px; text-align: center; cursor: pointer; transition: all 0.3s; background: rgba(139,92,246,0.03); position: relative; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--purple); background: rgba(139,92,246,0.08); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 1.8rem; margin-bottom: 8px; display: block; }
+.upload-zone h3 { font-family: var(--font-head); font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+.upload-zone p { font-size: 0.75rem; color: var(--text-2); }
+.file-info { display: none; margin-top: 10px; padding: 9px 12px; background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); border-radius: 8px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); text-align: left; }
+
+/* ── FORM ── */
+.form-group { margin-top: 18px; }
+.form-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 500; color: var(--text-2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.form-label span { font-family: var(--font-mono); color: var(--purple); font-size: 0.8rem; text-transform: none; letter-spacing: 0; }
+input[type=range] { -webkit-appearance: none; width: 100%; height: 3px; border-radius: 2px; background: linear-gradient(to right, var(--purple) 0%, var(--purple) var(--val,50%), var(--bg-card2) var(--val,50%)); outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 0 3px rgba(139,92,246,0.25); cursor: pointer; }
+select, input[type=number] { width: 100%; padding: 9px 12px; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; color: var(--text-1); font-family: var(--font-body); font-size: 0.88rem; outline: none; transition: border 0.2s; }
+select:focus, input[type=number]:focus { border-color: var(--purple); }
+select option { background: var(--bg-deep); }
+
+/* ── BUTTON ── */
+.btn-train { margin-top: 22px; width: 100%; padding: 13px; background: linear-gradient(135deg, var(--purple), var(--pink)); border: none; border-radius: 10px; color: #fff; font-family: var(--font-head); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+.btn-train:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+.btn-train:active:not(:disabled) { transform: translateY(0); }
+.btn-train:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ── RIGHT COL ── */
+.right-col { display: flex; flex-direction: column; gap: var(--card-gap); }
+
+/* ── STEPS ── */
+.steps-panel { display: none; }
+.step { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); opacity: 0.3; transition: opacity 0.4s; }
+.step:last-child { border-bottom: none; }
+.step.active, .step.done { opacity: 1; }
+.step-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; border: 2px solid var(--border); background: var(--bg-card2); flex-shrink: 0; transition: all 0.4s; }
+.step.active .step-icon { border-color: var(--purple); background: rgba(139,92,246,0.15); animation: pulse 1.5s infinite; }
+.step.done .step-icon   { border-color: var(--green);  background: rgba(52,211,153,0.15); color: var(--green); }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(139,92,246,0.4)} 70%{box-shadow:0 0 0 8px rgba(139,92,246,0)} 100%{box-shadow:0 0 0 0 rgba(139,92,246,0)} }
+.step-text h4 { font-size: 0.85rem; font-weight: 600; }
+.step-text p  { font-size: 0.72rem; color: var(--text-2); margin-top: 2px; }
+.progress-wrap { height: 3px; background: var(--bg-card2); border-radius: 2px; overflow: hidden; margin-top: 14px; }
+.progress-bar  { height: 100%; width: 0%; background: linear-gradient(90deg, var(--purple), var(--pink)); transition: width 0.5s ease; }
+
+/* ── EMPTY STATE ── */
+#emptyState { display: flex; align-items: center; justify-content: center; min-height: 420px; border: 1px dashed var(--border); border-radius: 16px; flex-direction: column; gap: 12px; text-align: center; padding: 40px; }
+
+/* ── RESULTS ── */
+.results-panel { display: none; }
+
+/* ── RESULTS INNER LAYOUT — all sections spaced by flex gap ── */
+.results-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+/* ── METRICS — 7 cards ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+/* Second row: 3 cards centred */
+.metrics-grid-row2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.metric-card {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.metric-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent, var(--purple));
+}
+.metric-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); margin-bottom: 8px; }
+.metric-value { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 500; line-height: 1; }
+.metric-sub   { font-size: 0.62rem; color: var(--text-3); margin-top: 4px; }
+.up   { color: var(--green); }
+.dn   { color: var(--red);   }
+.neu  { color: var(--blue);  }
+.warn { color: var(--amber); }
+.teal { color: var(--teal);  }
+
+/* ── CHART WRAP ── */
+.chart-wrap {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.chart-top { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.chart-title-txt { font-family: var(--font-head); font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
+.cdot { width: 6px; height: 6px; border-radius: 50%; }
+.chart-legend { display: flex; gap: 14px; margin-left: auto; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-2); }
+.leg-line { width: 16px; height: 2px; }
+
+/* ── BOTTOM GRID: donut + table side by side ── */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--card-gap);
+}
+
+/* ── DONUT — PERFECT CIRCLE ── */
+.donut-outer {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.donut-row { display: flex; align-items: center; gap: 20px; margin-top: 14px; }
+.donut-box {
+  width: 160px; height: 160px;
+  min-width: 160px; min-height: 160px;
+  position: relative; flex-shrink: 0;
+}
+.donut-box canvas {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 160px !important; height: 160px !important;
+}
+.donut-legend { flex: 1; }
+.dleg-row { display: flex; align-items: center; gap: 7px; padding: 4px 0; font-size: 0.75rem; }
+.dleg-dot  { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.dleg-name { color: var(--text-2); flex: 1; }
+.dleg-pct  { font-family: var(--font-mono); font-size: 0.78rem; }
+
+/* ── STOCK TABLE ── */
+.stocks-table-wrap {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+thead th { text-align: left; padding: 0 9px 10px; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3); border-bottom: 1px solid var(--border); }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+tbody td { padding: 9px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text-2); }
+tbody td:first-child { color: var(--text-1); font-weight: 600; font-family: var(--font-mono); font-size: 0.72rem; }
+.wbar-wrap { display: flex; align-items: center; gap: 7px; }
+.wbar { flex: 1; height: 4px; background: var(--bg-card); border-radius: 2px; overflow: hidden; }
+.wbar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--purple), var(--pink)); transition: width 0.8s ease; }
+
+/* ── MODEL INFO CARD ── */
+.model-info-card {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.mi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.mi-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 5px; }
+.mi-value { font-family: var(--font-mono); font-size: 0.73rem; color: var(--purple); line-height: 1.4; }
+
+/* ── SECTION TITLE ── */
+.sec-title {
+  font-family: var(--font-head);
+  font-size: 0.73rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-2);
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 0;          /* spacing handled by parent gap */
+}
+
+/* ── DOWNLOAD BTN ── */
+.btn-dl { padding: 7px 14px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 0.73rem; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s; font-family: var(--font-body); }
+.btn-dl:hover { border-color: var(--purple); color: var(--purple); }
+
+/* ── TOAST ── */
+.toast-wrap { position: fixed; bottom: 28px; right: 28px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 10px 16px; border-radius: 10px; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 8px; animation: su 0.3s ease; max-width: 320px; }
+.toast.success { background: rgba(52,211,153,0.12);  border: 1px solid rgba(52,211,153,0.25);  color: var(--green);  }
+.toast.error   { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.25); color: var(--red);    }
+.toast.info    { background: rgba(139,92,246,0.12);  border: 1px solid rgba(139,92,246,0.25);  color: var(--purple); }
+@keyframes su { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── SPINNER ── */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+.fade-in { animation: fi 0.5s ease forwards; }
+@keyframes fi { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── FOOTER ── */
+footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.footer-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.footer-badge { font-family: var(--font-mono); font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-3); }
+.footer-note { font-size: 0.72rem; color: var(--text-3); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+  .metrics-grid-row2 { grid-template-columns: repeat(3, 1fr); }
+  .mi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 800px) {
+  .bottom-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .main, .hero, header, footer { padding-left: 18px; padding-right: 18px; }
+  .metrics-grid       { grid-template-columns: repeat(2, 1fr); }
+  .metrics-grid-row2  { grid-template-columns: repeat(2, 1fr); }
+  .header-badges      { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📈</div>
+    Portfolio<span>RL</span>
+  </div>
+  <div class="header-badges">
+    <div class="badge">PPO · Deep RL</div>
+    <div class="badge">Stable-Baselines3</div>
+    <div class="badge">Up to 10+ Years</div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <h1>Markets Are Chaos. <br /><em>Your Portfolio Doesn't Have To Be.</em></h1>
+  <p>Upload 1–10 years of stock data. Our PPO agent dynamically allocates capital — maximizing returns, managing risk.</p>
+</section>
+
+<main class="main">
+
+  <!-- ── LEFT PANEL ── -->
+  <div class="left-col">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-dot"></div>
+        <h2>Dataset &amp; Configuration</h2>
+      </div>
+      <div class="panel-body">
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept=".csv" />
+          <span class="upload-icon">🗂</span>
+          <h3>Drop CSV file here</h3>
+          <p>or click to browse · supports 1–10 years of data</p>
+          <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Number of Stocks <span id="stocksVal">5</span></label>
+          <input type="range" id="nStocks" min="3" max="15" value="5" oninput="updateSlider(this,'stocksVal')" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Training Timesteps</label>
+          <select id="timesteps">
+            <option value="1000">1,000 — Ultra Fast (~8 s)</option>
+            <option value="2500" selected>2,500 — Recommended (~15 s)</option>
+            <option value="5000">5,000 — Thorough (~30 s)</option>
+            <option value="10000">10,000 — Deep (~60 s)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Initial Portfolio Value (USD)</label>
+          <input type="number" id="initialValue" value="10000" min="100" step="100" />
+        </div>
+
+        <button class="btn-train" id="trainBtn" disabled onclick="startTraining()">
+          <div class="btn-inner">
+            <span>🧠</span>
+            <span id="trainBtnText">Upload CSV to Begin</span>
+          </div>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-col">
+
+    <!-- Steps -->
+    <div class="panel steps-panel" id="stepsPanel">
+      <div class="panel-header">
+        <div class="panel-dot"></div>
+        <h2>Training Pipeline</h2>
+      </div>
+      <div class="panel-body">
+        <div class="step" id="s1"><div class="step-icon">📤</div><div class="step-text"><h4>Data Uploaded</h4><p>CSV received and validated</p></div></div>
+        <div class="step" id="s2"><div class="step-icon">⚙️</div><div class="step-text"><h4>Preprocessing</h4><p>Weekly resampling, computing returns</p></div></div>
+        <div class="step" id="s3"><div class="step-icon">🧠</div><div class="step-text"><h4>Training PPO Agent</h4><p>Risk-adjusted MLP policy [32,32] · CPU optimised</p></div></div>
+        <div class="step" id="s4"><div class="step-icon">📊</div><div class="step-text"><h4>Generating Results</h4><p>Backtest + benchmark comparison</p></div></div>
+        <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState">
+      <div style="font-size:3rem">🤖</div>
+      <div style="font-family:var(--font-head);font-size:1.1rem;color:var(--text-2)">Awaiting Your Dataset</div>
+      <div style="font-size:0.8rem;max-width:300px;line-height:1.6;color:var(--text-3)">Upload a CSV with Date, Stock Name/Ticker, and Close Price columns. Supports 1–10+ years of daily or weekly data.</div>
+    </div>
+
+    <!-- ── RESULTS ── -->
+    <div class="results-panel" id="resultsPanel">
+      <div class="results-inner">
+
+        <!-- Row 1: 4 metric cards -->
+        <div class="metrics-grid">
+          <div class="metric-card" style="--accent:var(--green)">
+            <div class="metric-label">PPO Return</div>
+            <div class="metric-value up" id="mReturn">—</div>
+            <div class="metric-sub">AI strategy (total)</div>
+          </div>
+          <div class="metric-card" style="--accent:var(--amber)">
+            <div class="metric-label">Benchmark</div>
+            <div class="metric-value warn" id="mBench">—</div>
+            <div class="metric-sub">equal-weight total</div>
+          </div>
+          <div class="metric-card" style="--accent:var(--blue)">
+            <div class="metric-label">Final Value</div>
+            <div class="metric-value neu" id="mFinal">—</div>
+            <div class="metric-sub">portfolio USD</div>
+          </div>
+          <div class="metric-card" style="--accent:var(--teal)">
+            <div class="metric-label">Ann. Return</div>
+            <div class="metric-value teal" id="mAnnual">—</div>
+            <div class="metric-sub">CAGR</div>
+          </div>
+        </div>
+
+        <!-- Row 2: 3 metric cards -->
+        <div class="metrics-grid-row2">
+          <div class="metric-card" style="--accent:var(--purple)">
+            <div class="metric-label">Sharpe Ratio</div>
+            <div class="metric-value" id="mSharpe">—</div>
+            <div class="metric-sub">risk-adj return</div>
+          </div>
+          <div class="metric-card" style="--accent:var(--red)">
+            <div class="metric-label">Max Drawdown</div>
+            <div class="metric-value dn" id="mDrawdown">—</div>
+            <div class="metric-sub">peak-to-trough</div>
+          </div>
+          <div class="metric-card" style="--accent:var(--pink)">
+            <div class="metric-label">Calmar Ratio</div>
+            <div class="metric-value" id="mCalmar">—</div>
+            <div class="metric-sub">ann.ret / drawdown</div>
+          </div>
+        </div>
+
+        <!-- Line Chart -->
+        <div class="chart-wrap">
+          <div class="chart-top">
+            <div class="chart-title-txt">
+              <div class="cdot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+              Portfolio Equity Curve
+            </div>
+            <div class="chart-legend">
+              <div class="leg-item"><div class="leg-line" style="background:var(--green)"></div>PPO Strategy</div>
+              <div class="leg-item"><div class="leg-line" style="border-top:2px dashed var(--amber);height:0;width:16px"></div>Benchmark</div>
+            </div>
+            <div style="flex:1"></div>
+            <button class="btn-dl" onclick="dlChart()">⬇ Export PNG</button>
+          </div>
+          <canvas id="lineChart" height="240"></canvas>
+        </div>
+
+        <!-- Donut + Table -->
+        <div class="bottom-grid">
+
+          <!-- DONUT -->
+          <div class="donut-outer">
+            <div class="sec-title">
+              <div class="cdot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div>
+              Final Asset Allocation
+            </div>
+            <div class="donut-row">
+              <div class="donut-box">
+                <canvas id="donutChart"></canvas>
+              </div>
+              <div class="donut-legend" id="donutLegend"></div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="stocks-table-wrap">
+            <div class="sec-title">
+              <div class="cdot" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>
+              Stock Allocations
+            </div>
+            <table style="margin-top:14px">
+              <thead><tr><th>Ticker</th><th>Weight</th><th>%</th></tr></thead>
+              <tbody id="stocksBody"></tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- Model Info -->
+        <div class="model-info-card">
+          <div class="sec-title">
+            <div class="cdot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div>
+            Model Architecture
+          </div>
+          <div class="mi-grid" id="miGrid"></div>
+        </div>
+
+      </div><!-- /results-inner -->
+    </div><!-- /resultsPanel -->
+
+  </div><!-- /right-col -->
+</main>
+
+<footer>
+  <div class="footer-badges">
+    <div class="footer-badge">Python</div>
+    <div class="footer-badge">Flask</div>
+    <div class="footer-badge">PPO</div>
+    <div class="footer-badge">Stable-Baselines3</div>
+    <div class="footer-badge">Gymnasium</div>
+    <div class="footer-badge">Chart.js</div>
+  </div>
+  <div class="footer-note">Trained on historical stock data · Educational use only</div>
+</footer>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const COLORS = [
+  '#8b5cf6','#34d399','#60a5fa','#fbbf24','#f472b6',
+  '#a78bfa','#6ee7b7','#fb923c','#38bdf8','#4ade80',
+  '#e879f9','#f87171','#2dd4bf','#facc15','#818cf8'
+];
+let lineInst = null, donutInst = null, file = null;
+
+// ── SLIDER ─────────────────────────────────────────────────
+function updateSlider(el, valId) {
+  document.getElementById(valId).textContent = el.value;
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--val', pct + '%');
+}
+updateSlider(document.getElementById('nStocks'), 'stocksVal');
+
+// ── FILE UPLOAD ────────────────────────────────────────────
+const uz = document.getElementById('uploadZone');
+const fi = document.getElementById('fileInput');
+uz.addEventListener('dragover',  e => { e.preventDefault(); uz.classList.add('drag-over'); });
+uz.addEventListener('dragleave', () => uz.classList.remove('drag-over'));
+uz.addEventListener('drop', e => {
+  e.preventDefault(); uz.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+fi.addEventListener('change', () => { if (fi.files[0]) setFile(fi.files[0]); });
+
+function setFile(f) {
+  file = f;
+  const info = document.getElementById('fileInfo');
+  info.style.display  = 'block';
+  info.textContent    = '✓ ' + f.name + '  ·  ' + (f.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('trainBtn').disabled      = false;
+  document.getElementById('trainBtnText').textContent = 'Train & Optimize Portfolio';
+  toast('File loaded: ' + f.name, 'success');
+}
+
+// ── TRAINING ───────────────────────────────────────────────
+async function startTraining() {
+  if (!file) return;
+  document.getElementById('emptyState').style.display  = 'none';
+  document.getElementById('stepsPanel').style.display  = 'block';
+  document.getElementById('resultsPanel').style.display = 'none';
+
+  ['s1','s2','s3','s4'].forEach(id => {
+    const s = document.getElementById(id);
+    s.classList.remove('active', 'done');
+    s.querySelector('.step-icon').textContent = {s1:'📤',s2:'⚙️',s3:'🧠',s4:'📊'}[id];
+  });
+
+  document.getElementById('trainBtn').disabled         = true;
+  document.getElementById('trainBtnText').innerHTML    = '<span class="spinner"></span> Training…';
+  document.getElementById('progressBar').style.width  = '0%';
+
+  await animStep('s1', 12, 300);
+  await animStep('s2', 30, 400);
+  setActive('s3');
+  document.getElementById('progressBar').style.width = '48%';
+
+  const fd = new FormData();
+  fd.append('file',          file);
+  fd.append('n_stocks',      document.getElementById('nStocks').value);
+  fd.append('timesteps',     document.getElementById('timesteps').value);
+  fd.append('initial_value', document.getElementById('initialValue').value);
+
+  try {
+    const t0  = Date.now();
+    const res = await fetch('/train', { method: 'POST', body: fd });
+    const d   = await res.json();
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+    if (!res.ok || d.error) {
+      toast('Error: ' + (d.error || 'Unknown'), 'error');
+      resetBtn(); return;
+    }
+
+    await animStep('s3', 80, 200);
+    await animStep('s4', 100, 350);
+    showResults(d);
+    toast('Done in ' + elapsed + 's ✓', 'success');
+  } catch (e) {
+    toast('Connection error: ' + e.message, 'error');
+    resetBtn();
+  }
+}
+
+function setActive(id) { document.getElementById(id).classList.add('active'); }
+function animStep(id, pct, ms) {
+  return new Promise(resolve => {
+    setActive(id);
+    document.getElementById('progressBar').style.width = pct + '%';
+    setTimeout(() => {
+      const s = document.getElementById(id);
+      s.classList.remove('active'); s.classList.add('done');
+      s.querySelector('.step-icon').textContent = '✓';
+      resolve();
+    }, ms);
+  });
+}
+function resetBtn() {
+  document.getElementById('trainBtn').disabled          = false;
+  document.getElementById('trainBtnText').textContent   = 'Train & Optimize Portfolio';
+}
+
+// ── SHOW RESULTS ───────────────────────────────────────────
+function showResults(d) {
+  const rp = document.getElementById('resultsPanel');
+  rp.style.display = 'block';
+  rp.classList.add('fade-in');
+
+  const fmt = (v, plus = true) => (plus && v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+
+  // Row 1
+  const ret = d.total_return;
+  document.getElementById('mReturn').textContent = fmt(ret);
+  document.getElementById('mReturn').className   = 'metric-value ' + (ret >= 0 ? 'up' : 'dn');
+
+  const bench = d.benchmark_return;
+  document.getElementById('mBench').textContent  = fmt(bench);
+  document.getElementById('mBench').className    = 'metric-value ' + (bench >= 0 ? 'warn' : 'dn');
+
+  document.getElementById('mFinal').textContent  = '$' + d.final_value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  const ann = d.ann_return ?? 0;
+  document.getElementById('mAnnual').textContent = fmt(ann);
+  document.getElementById('mAnnual').className   = 'metric-value teal ' + (ann >= 0 ? 'up' : 'dn');
+
+  // Row 2
+  const sh = d.sharpe_ratio;
+  document.getElementById('mSharpe').textContent = sh.toFixed(3);
+  document.getElementById('mSharpe').className   = 'metric-value ' + (sh >= 1 ? 'up' : sh > 0 ? 'neu' : 'dn');
+
+  document.getElementById('mDrawdown').textContent = d.max_drawdown.toFixed(2) + '%';
+
+  const cal = d.calmar_ratio ?? 0;
+  document.getElementById('mCalmar').textContent = cal.toFixed(3);
+  document.getElementById('mCalmar').className   = 'metric-value ' + (cal >= 1 ? 'up' : cal > 0 ? 'neu' : 'dn');
+
+  renderLine(d);
+  renderDonut(d.stocks, d.final_weights);
+  renderTable(d.stocks, d.final_weights);
+  renderMI(d.model_info);
+
+  resetBtn();
+  setTimeout(() => rp.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+}
+
+// ── LINE CHART ────────────────────────────────────────────
+function renderLine(d) {
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  if (lineInst) lineInst.destroy();
+
+  const step   = Math.max(1, Math.floor(d.dates.length / 14));
+  const labels = d.dates.map((dt, i) => i % step === 0 ? dt.slice(0, 7) : '');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 300);
+  grad.addColorStop(0, 'rgba(52,211,153,0.20)');
+  grad.addColorStop(1, 'rgba(52,211,153,0)');
+
+  lineInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'PPO Strategy',
+          data: d.portfolio_values,
+          borderColor: '#34d399', borderWidth: 2,
+          backgroundColor: grad, fill: true,
+          tension: 0.4, pointRadius: 0, pointHoverRadius: 5,
+        },
+        {
+          label: 'Equal-Weight Benchmark',
+          data: d.benchmark_values,
+          borderColor: '#fbbf24', borderWidth: 1.5,
+          borderDash: [6, 4], backgroundColor: 'transparent',
+          fill: false, tension: 0.4, pointRadius: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#130f1f', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+          titleColor: '#9285aa', bodyColor: '#f5f0ff',
+          callbacks: {
+            label: c => ' $' + c.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          ticks: { color: '#4a4060', font: { family: 'JetBrains Mono', size: 10 }, maxRotation: 0 }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#4a4060', font: { family: 'JetBrains Mono', size: 10 },
+            callback: v => '$' + (v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v)
+          }
+        }
+      },
+      animation: { duration: 1200, easing: 'easeInOutQuart' }
+    }
+  });
+}
+
+// ── DONUT ─────────────────────────────────────────────────
+function renderDonut(stocks, weights) {
+  if (donutInst) { donutInst.destroy(); donutInst = null; }
+  const canvas = document.getElementById('donutChart');
+  canvas.width = 160; canvas.height = 160;
+  canvas.style.width = '160px'; canvas.style.height = '160px';
+
+  const pcts   = weights.map(w => +(w * 100).toFixed(1));
+  const colors = stocks.map((_, i) => COLORS[i % COLORS.length]);
+
+  donutInst = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: stocks,
+      datasets: [{ data: pcts, backgroundColor: colors, borderColor: '#130f1f', borderWidth: 3, hoverOffset: 6 }]
+    },
+    options: {
+      maintainAspectRatio: false, aspectRatio: 1, cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#130f1f', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, bodyColor: '#f5f0ff',
+          callbacks: { label: c => ` ${c.label}: ${c.parsed.toFixed(1)}%` }
+        }
+      },
+      animation: { duration: 900 }
+    }
+  });
+
+  document.getElementById('donutLegend').innerHTML = stocks.map((s, i) =>
+    `<div class="dleg-row">
+      <div class="dleg-dot" style="background:${colors[i]}"></div>
+      <span class="dleg-name">${s}</span>
+      <span class="dleg-pct">${pcts[i]}%</span>
+    </div>`
+  ).join('');
+}
+
+// ── TABLE ─────────────────────────────────────────────────
+function renderTable(stocks, weights) {
+  const max = Math.max(...weights);
+  document.getElementById('stocksBody').innerHTML = stocks.map((s, i) => {
+    const pct = (weights[i] * 100).toFixed(1);
+    const bw  = (weights[i] / max * 100).toFixed(0);
+    return `<tr>
+      <td>${s}</td>
+      <td><div class="wbar-wrap"><div class="wbar"><div class="wbar-fill" style="width:${bw}%"></div></div></div></td>
+      <td style="font-family:var(--font-mono);color:var(--text-1)">${pct}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MODEL INFO ────────────────────────────────────────────
+function renderMI(info) {
+  if (!info) return;
+  const rows = [
+    { label: 'Algorithm',    value: info.algorithm    },
+    { label: 'Architecture', value: info.architecture },
+    { label: 'Obs Window',   value: info.obs_window   },
+    { label: 'Obs Space',    value: info.obs_space    },
+    { label: 'Action Space', value: info.action_space },
+    { label: 'Reward',       value: info.reward       },
+    { label: 'Data Freq',    value: info.data_freq    },
+    { label: 'Timesteps',    value: info.timesteps    },
+    { label: 'Policy',       value: info.policy       },
+  ];
+  document.getElementById('miGrid').innerHTML = rows.map(r =>
+    `<div><div class="mi-label">${r.label}</div><div class="mi-value">${r.value}</div></div>`
+  ).join('');
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────
+function dlChart() {
+  if (!lineInst) return;
+  const a = document.createElement('a');
+  a.download = 'portfolioRL_chart.png';
+  a.href = document.getElementById('lineChart').toDataURL('image/png');
+  a.click();
+  toast('Chart exported!', 'info');
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const wrap = document.getElementById('toastWrap');
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+  const el   = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
+</script>
+</body>
+</html>
