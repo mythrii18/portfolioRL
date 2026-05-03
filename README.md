@@ -46,23 +46,34 @@ Sharpe Ratio above 1.0 is the gold standard in finance.
 ## 🏗️ System Architecture
 
 
-WEB BROWSER
+### WEB BROWSER
 Upload CSV → Configure → Train → Results
 ↓
 HTTP POST /train
 
-FLASK BACKEND (app.py)
+### FLASK BACKEND (app.py)
+
 Load CSV → Clean → Pivot → Weekly Resample
+
 ↓
+
 Gymnasium Environment
+
+
 ↓
 PPO Agent Training
+
 ↓
+
 Backtest + Metrics
+
 ↓
+
 Return JSON Results
 
-RESULTS DASHBOARD
+
+### RESULTS DASHBOARD
+
 Metric Cards | Equity Curve | Donut Chart
 
 
@@ -72,15 +83,24 @@ Metric Cards | Equity Curve | Donut Chart
 
 
 Input: 20 features (5 stocks × 4 weeks)
+
 ↓
+
 Hidden Layer 1 (32 neurons, ReLU)
+
 ↓
+
 Hidden Layer 2 (32 neurons, ReLU)
+
 ↓
 Actor-Critic Output
+
 ↓
+
 Softmax
+
 ↓
+
 Output: 5 portfolio weights (sum = 100%)
 
 
@@ -90,15 +110,25 @@ Output: 5 portfolio weights (sum = 100%)
 
 
 STATE (20 features)
+
 ↓
+
 PPO AGENT
+
 ↓
+
 ACTION (5 weights)
+
 ↓
+
 REWARD = return − 0.15 × volatility
+
 ↓
+
 Repeat for training timesteps
+
 ↓
+
 Agent improves over time
 
 
