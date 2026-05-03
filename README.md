@@ -48,7 +48,9 @@ Sharpe Ratio above 1.0 is the gold standard in finance.
 
 ### WEB BROWSER
 Upload CSV → Configure → Train → Results
+
 ↓
+
 HTTP POST /train
 
 ### FLASK BACKEND (app.py)
